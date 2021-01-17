@@ -83,10 +83,11 @@ func (d *Client) Register(ctx context.Context, svc *Service) error {
 		TaggedAddresses: addresses,
 		Address:         addr,
 		Port:            int(port),
-		Check: &api.AgentServiceCheck{
-			TCP:      fmt.Sprintf("%s:%d", addr, port),
-			Interval: "10s",
-			Status:   api.HealthPassing,
+		Checks: []*api.AgentServiceCheck{
+			{
+				TCP:      fmt.Sprintf("%s:%d", addr, port),
+				Interval: "10s",
+			},
 		},
 	}
 
