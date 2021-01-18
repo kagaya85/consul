@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/hashicorp/consul/api"
 	"github.com/stretchr/testify/assert"
 )
@@ -36,12 +37,12 @@ func TestRegister(t *testing.T) {
 	r, err := New(&Config{&api.Config{Address: "127.0.0.1:8500"}})
 	assert.Nil(t, err)
 	version := strconv.FormatInt(time.Now().Unix(), 10)
-	svc := &Service{
-		id:        "test2233",
-		name:      "test-provider",
-		version:   version,
-		metadata:  map[string]string{"app": "kratos"},
-		endpoints: []string{fmt.Sprintf("tcp://%s?isSecure=false", addr)},
+	svc := &registry.Service{
+		ID:        "test2233",
+		Name:      "test-provider",
+		Version:   version,
+		Metadata:  map[string]string{"app": "kratos"},
+		Endpoints: []string{fmt.Sprintf("tcp://%s?isSecure=false", addr)},
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancel()
@@ -55,9 +56,9 @@ func TestRegister(t *testing.T) {
 	services, err := w.Watch(ctx)
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(services))
-	assert.EqualValues(t, "test2233", services[0].ID())
-	assert.EqualValues(t, "test-provider", services[0].Name())
-	assert.EqualValues(t, version, services[0].Version())
+	assert.EqualValues(t, "test2233", services[0].ID)
+	assert.EqualValues(t, "test-provider", services[0].Name)
+	assert.EqualValues(t, version, services[0].Version)
 }
 
 func getIntranetIP() string {

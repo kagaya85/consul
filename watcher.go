@@ -15,7 +15,7 @@ type watcher struct {
 	cancel context.CancelFunc
 }
 
-func (w *watcher) Watch(ctx context.Context) (services []registry.Service, err error) {
+func (w *watcher) Watch(ctx context.Context) (services []*registry.Service, err error) {
 	select {
 	case <-w.ctx.Done():
 		err = ctx.Err()
@@ -23,7 +23,7 @@ func (w *watcher) Watch(ctx context.Context) (services []registry.Service, err e
 		err = ctx.Err()
 	case <-w.event:
 	}
-	ss, ok := w.set.services.Load().([]*Service)
+	ss, ok := w.set.services.Load().([]*registry.Service)
 	if ok {
 		for _, s := range ss {
 			services = append(services, s)

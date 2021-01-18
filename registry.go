@@ -45,31 +45,24 @@ func New(cfg *Config) (r *Registry, err error) {
 }
 
 // Register register service
-func (r *Registry) Register(ctx context.Context, svc registry.Service) error {
-	service := &Service{
-		id:        svc.ID(),
-		name:      svc.Name(),
-		version:   svc.Version(),
-		metadata:  svc.Metadata(),
-		endpoints: svc.Endpoints(),
-	}
-	return r.cli.Register(ctx, service)
+func (r *Registry) Register(ctx context.Context, svc *registry.Service) error {
+	return r.cli.Register(ctx, svc)
 }
 
 // Deregister deregister service
-func (r *Registry) Deregister(ctx context.Context, svc registry.Service) error {
-	return r.cli.Deregister(ctx, svc.ID())
+func (r *Registry) Deregister(ctx context.Context, svc *registry.Service) error {
+	return r.cli.Deregister(ctx, svc.ID)
 }
 
 // GetService return service by name
-func (r *Registry) GetService(name string) (services []registry.Service, err error) {
+func (r *Registry) GetService(name string) (services []*registry.Service, err error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 	set := r.registry[name]
 	if set == nil {
 		return nil, errors.NotFound("service not resolved", "service %s not resolved in registry", name)
 	}
-	ss, _ := set.services.Load().([]*Service)
+	ss, _ := set.services.Load().([]*registry.Service)
 	if ss == nil {
 		return nil, errors.NotFound("service not found", "service %s not found in registry", name)
 	}
@@ -80,13 +73,13 @@ func (r *Registry) GetService(name string) (services []registry.Service, err err
 }
 
 // ListService return service list
-func (r *Registry) ListService() (allServices map[string][]registry.Service, err error) {
+func (r *Registry) ListService() (allServices map[string][]*registry.Service, err error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
-	allServices = make(map[string][]registry.Service)
+	allServices = make(map[string][]*registry.Service)
 	for name, set := range r.registry {
-		var services []registry.Service
-		ss, _ := set.services.Load().([]*Service)
+		var services []*registry.Service
+		ss, _ := set.services.Load().([]*registry.Service)
 		if ss == nil {
 			continue
 		}
@@ -121,7 +114,7 @@ func (r *Registry) Resolve(ctx context.Context, name string) (registry.Watcher, 
 	set.lock.Lock()
 	set.watcher[w] = struct{}{}
 	set.lock.Unlock()
-	ss, _ := set.services.Load().([]*Service)
+	ss, _ := set.services.Load().([]*registry.Service)
 	if len(ss) > 0 {
 		// 如果services有值需要推送给watcher，否则watch的时候可能会永远阻塞拿不到初始的数据
 		w.event <- struct{}{}

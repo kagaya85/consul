@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-kratos/kratos/v2/registry"
 	"github.com/hashicorp/consul/api"
 )
 
@@ -27,7 +28,7 @@ func NewClient(cfg *api.Config) (*Client, error) {
 }
 
 // Service get services from consul
-func (d *Client) Service(ctx context.Context, service string, index uint64, passingOnly bool) ([]*Service, uint64, error) {
+func (d *Client) Service(ctx context.Context, service string, index uint64, passingOnly bool) ([]*registry.Service, uint64, error) {
 	opts := &api.QueryOptions{
 		WaitIndex: index,
 		WaitTime:  time.Second * 55,
@@ -37,7 +38,7 @@ func (d *Client) Service(ctx context.Context, service string, index uint64, pass
 	if err != nil {
 		return nil, 0, err
 	}
-	var services []*Service
+	var services []*registry.Service
 	for _, entry := range entries {
 		var version string
 		for _, tag := range entry.Service.Tags {
@@ -50,23 +51,23 @@ func (d *Client) Service(ctx context.Context, service string, index uint64, pass
 		for _, addr := range entry.Service.TaggedAddresses {
 			endpoints = append(endpoints, addr.Address)
 		}
-		services = append(services, &Service{
-			id:        entry.Service.ID,
-			name:      entry.Service.Service,
-			metadata:  entry.Service.Meta,
-			version:   version,
-			endpoints: endpoints,
+		services = append(services, &registry.Service{
+			ID:        entry.Service.ID,
+			Name:      entry.Service.Service,
+			Metadata:  entry.Service.Meta,
+			Version:   version,
+			Endpoints: endpoints,
 		})
 	}
 	return services, meta.LastIndex, nil
 }
 
 // Register register service instacen to consul
-func (d *Client) Register(ctx context.Context, svc *Service) error {
+func (d *Client) Register(ctx context.Context, svc *registry.Service) error {
 	addresses := make(map[string]api.ServiceAddress)
 	var addr string
 	var port uint64
-	for _, endpoint := range svc.endpoints {
+	for _, endpoint := range svc.Endpoints {
 		raw, err := url.Parse(endpoint)
 		if err != nil {
 			return err
@@ -76,10 +77,10 @@ func (d *Client) Register(ctx context.Context, svc *Service) error {
 		addresses[raw.Scheme] = api.ServiceAddress{Address: endpoint, Port: int(port)}
 	}
 	asr := &api.AgentServiceRegistration{
-		ID:              svc.id,
-		Name:            svc.name,
-		Meta:            svc.metadata,
-		Tags:            []string{fmt.Sprintf("version=%s", svc.version)},
+		ID:              svc.ID,
+		Name:            svc.Name,
+		Meta:            svc.Metadata,
+		Tags:            []string{fmt.Sprintf("version=%s", svc.Version)},
 		TaggedAddresses: addresses,
 		Address:         addr,
 		Port:            int(port),
