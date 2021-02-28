@@ -1,4 +1,4 @@
-package consul
+package registry
 
 import (
 	"sync"
