@@ -14,21 +14,16 @@ import (
 
 // Client is consul client config
 type Client struct {
-	cfg *api.Config
 	cli *api.Client
 }
 
 // NewClient creates consul client
-func NewClient(cfg *api.Config) (*Client, error) {
-	cli, err := api.NewClient(cfg)
-	if err != nil {
-		return nil, err
-	}
-	return &Client{cli: cli, cfg: cfg}, nil
+func NewClient(cli *api.Client) (*Client, error) {
+	return &Client{cli: cli}, nil
 }
 
 // Service get services from consul
-func (d *Client) Service(ctx context.Context, service string, index uint64, passingOnly bool) ([]*registry.Service, uint64, error) {
+func (d *Client) Service(ctx context.Context, service string, index uint64, passingOnly bool) ([]*registry.ServiceInstance, uint64, error) {
 	opts := &api.QueryOptions{
 		WaitIndex: index,
 		WaitTime:  time.Second * 55,
@@ -38,7 +33,7 @@ func (d *Client) Service(ctx context.Context, service string, index uint64, pass
 	if err != nil {
 		return nil, 0, err
 	}
-	var services []*registry.Service
+	var services []*registry.ServiceInstance
 	for _, entry := range entries {
 		var version string
 		for _, tag := range entry.Service.Tags {
@@ -51,7 +46,7 @@ func (d *Client) Service(ctx context.Context, service string, index uint64, pass
 		for _, addr := range entry.Service.TaggedAddresses {
 			endpoints = append(endpoints, addr.Address)
 		}
-		services = append(services, &registry.Service{
+		services = append(services, &registry.ServiceInstance{
 			ID:        entry.Service.ID,
 			Name:      entry.Service.Service,
 			Metadata:  entry.Service.Meta,
@@ -63,7 +58,7 @@ func (d *Client) Service(ctx context.Context, service string, index uint64, pass
 }
 
 // Register register service instacen to consul
-func (d *Client) Register(ctx context.Context, svc *registry.Service) error {
+func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) error {
 	addresses := make(map[string]api.ServiceAddress)
 	var addr string
 	var port uint64

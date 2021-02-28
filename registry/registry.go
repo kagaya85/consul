@@ -12,9 +12,15 @@ import (
 )
 
 var (
-	_ registry.Discovery = &Registry{}
-	_ registry.Registrar = &Registry{}
+	_ registry.Registrar  = &Registry{}
+	_ registry.Discoverer = &Registry{}
 )
+
+// Option is consul registry option.
+type Option func(*options)
+
+type options struct {
+}
 
 // Config is consul registry config
 type Config struct {
@@ -31,13 +37,12 @@ type Registry struct {
 }
 
 // New creates consul registry
-func New(cfg *Config) (r *Registry, err error) {
-	cli, err := NewClient(cfg.Config)
+func New(apiClient *api.Client, opts ...Option) (r *Registry, err error) {
+	cli, err := NewClient(apiClient)
 	if err != nil {
 		return
 	}
 	r = &Registry{
-		cfg:      cfg,
 		cli:      cli,
 		registry: make(map[string]*serviceSet),
 	}
@@ -45,24 +50,24 @@ func New(cfg *Config) (r *Registry, err error) {
 }
 
 // Register register service
-func (r *Registry) Register(ctx context.Context, svc *registry.Service) error {
+func (r *Registry) Register(ctx context.Context, svc *registry.ServiceInstance) error {
 	return r.cli.Register(ctx, svc)
 }
 
 // Deregister deregister service
-func (r *Registry) Deregister(ctx context.Context, svc *registry.Service) error {
+func (r *Registry) Deregister(ctx context.Context, svc *registry.ServiceInstance) error {
 	return r.cli.Deregister(ctx, svc.ID)
 }
 
-// GetService return service by name
-func (r *Registry) GetService(name string) (services []*registry.Service, err error) {
+// Fetch return service by name
+func (r *Registry) Fetch(ctx context.Context, name string) (services []*registry.ServiceInstance, err error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 	set := r.registry[name]
 	if set == nil {
 		return nil, errors.NotFound("service not resolved", "service %s not resolved in registry", name)
 	}
-	ss, _ := set.services.Load().([]*registry.Service)
+	ss, _ := set.services.Load().([]*registry.ServiceInstance)
 	if ss == nil {
 		return nil, errors.NotFound("service not found", "service %s not found in registry", name)
 	}
@@ -72,14 +77,14 @@ func (r *Registry) GetService(name string) (services []*registry.Service, err er
 	return
 }
 
-// ListService return service list
-func (r *Registry) ListService() (allServices map[string][]*registry.Service, err error) {
+// List return service list
+func (r *Registry) List() (allServices map[string][]*registry.ServiceInstance, err error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
-	allServices = make(map[string][]*registry.Service)
+	allServices = make(map[string][]*registry.ServiceInstance)
 	for name, set := range r.registry {
-		var services []*registry.Service
-		ss, _ := set.services.Load().([]*registry.Service)
+		var services []*registry.ServiceInstance
+		ss, _ := set.services.Load().([]*registry.ServiceInstance)
 		if ss == nil {
 			continue
 		}
@@ -91,8 +96,8 @@ func (r *Registry) ListService() (allServices map[string][]*registry.Service, er
 	return
 }
 
-// Resolve resolve service by name
-func (r *Registry) Resolve(ctx context.Context, name string) (registry.Watcher, error) {
+// Watch resolve service by name
+func (r *Registry) Watch(ctx context.Context, name string) (registry.Watcher, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 	set, ok := r.registry[name]
@@ -114,7 +119,7 @@ func (r *Registry) Resolve(ctx context.Context, name string) (registry.Watcher, 
 	set.lock.Lock()
 	set.watcher[w] = struct{}{}
 	set.lock.Unlock()
-	ss, _ := set.services.Load().([]*registry.Service)
+	ss, _ := set.services.Load().([]*registry.ServiceInstance)
 	if len(ss) > 0 {
 		// 如果services有值需要推送给watcher，否则watch的时候可能会永远阻塞拿不到初始的数据
 		w.event <- struct{}{}

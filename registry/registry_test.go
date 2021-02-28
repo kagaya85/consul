@@ -34,10 +34,14 @@ func TestRegister(t *testing.T) {
 	defer lis.Close()
 	go tcpServer(t, lis)
 	time.Sleep(time.Millisecond * 100)
-	r, err := New(&Config{&api.Config{Address: "127.0.0.1:8500"}})
+	cli, err := api.NewClient(&api.Config{Address: "127.0.0.1:8500"})
+	if err != nil {
+		t.Fatalf("create consul client failed!err:=%v", err)
+	}
+	r, err := New(cli)
 	assert.Nil(t, err)
 	version := strconv.FormatInt(time.Now().Unix(), 10)
-	svc := &registry.Service{
+	svc := &registry.ServiceInstance{
 		ID:        "test2233",
 		Name:      "test-provider",
 		Version:   version,
@@ -50,10 +54,10 @@ func TestRegister(t *testing.T) {
 	assert.Nil(t, err)
 	err = r.Register(ctx, svc)
 	assert.Nil(t, err)
-	w, err := r.Resolve(ctx, "test-provider")
+	w, err := r.Watch(ctx, "test-provider")
 	assert.Nil(t, err)
 
-	services, err := w.Watch(ctx)
+	services, err := w.Next()
 	assert.Nil(t, err)
 	assert.Equal(t, 1, len(services))
 	assert.EqualValues(t, "test2233", services[0].ID)

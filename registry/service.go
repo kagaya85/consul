@@ -14,7 +14,7 @@ type serviceSet struct {
 	lock        sync.RWMutex
 }
 
-func (s *serviceSet) broadcast(ss []*registry.Service) {
+func (s *serviceSet) broadcast(ss []*registry.ServiceInstance) {
 	s.services.Store(ss)
 	s.lock.RLock()
 	defer s.lock.RUnlock()
