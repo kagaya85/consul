@@ -37,16 +37,11 @@ type Registry struct {
 }
 
 // New creates consul registry
-func New(apiClient *api.Client, opts ...Option) (r *Registry, err error) {
-	cli, err := NewClient(apiClient)
-	if err != nil {
-		return
-	}
-	r = &Registry{
-		cli:      cli,
+func New(apiClient *api.Client, opts ...Option) *Registry {
+	return &Registry{
+		cli:      NewClient(apiClient),
 		registry: make(map[string]*serviceSet),
 	}
-	return
 }
 
 // Register register service

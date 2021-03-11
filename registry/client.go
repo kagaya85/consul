@@ -18,8 +18,8 @@ type Client struct {
 }
 
 // NewClient creates consul client
-func NewClient(cli *api.Client) (*Client, error) {
-	return &Client{cli: cli}, nil
+func NewClient(cli *api.Client) *Client {
+	return &Client{cli: cli}
 }
 
 // Service get services from consul
