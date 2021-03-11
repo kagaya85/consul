@@ -12,8 +12,8 @@ import (
 )
 
 var (
-	_ registry.Registrar  = &Registry{}
-	_ registry.Discoverer = &Registry{}
+	_ registry.Registrar = &Registry{}
+	_ registry.Discovery = &Registry{}
 )
 
 // Option is consul registry option.
@@ -59,8 +59,8 @@ func (r *Registry) Deregister(ctx context.Context, svc *registry.ServiceInstance
 	return r.cli.Deregister(ctx, svc.ID)
 }
 
-// Fetch return service by name
-func (r *Registry) Fetch(ctx context.Context, name string) (services []*registry.ServiceInstance, err error) {
+// GetService return service by name
+func (r *Registry) GetService(ctx context.Context, name string) (services []*registry.ServiceInstance, err error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 	set := r.registry[name]
@@ -77,8 +77,8 @@ func (r *Registry) Fetch(ctx context.Context, name string) (services []*registry
 	return
 }
 
-// List return service list
-func (r *Registry) List() (allServices map[string][]*registry.ServiceInstance, err error) {
+// ListServices return service list.
+func (r *Registry) ListServices() (allServices map[string][]*registry.ServiceInstance, err error) {
 	r.lock.RLock()
 	defer r.lock.RUnlock()
 	allServices = make(map[string][]*registry.ServiceInstance)

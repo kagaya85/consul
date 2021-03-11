@@ -30,7 +30,7 @@ func (w *watcher) Next() (services []*registry.ServiceInstance, err error) {
 	return
 }
 
-func (w *watcher) Close() error {
+func (w *watcher) Stop() error {
 	w.cancel()
 	w.set.lock.Lock()
 	defer w.set.lock.Unlock()
