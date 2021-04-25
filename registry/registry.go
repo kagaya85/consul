@@ -2,6 +2,7 @@ package registry
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -60,11 +61,11 @@ func (r *Registry) GetService(ctx context.Context, name string) (services []*reg
 	defer r.lock.RUnlock()
 	set := r.registry[name]
 	if set == nil {
-		return nil, errors.NotFound("service not resolved", "service %s not resolved in registry", name)
+		return nil, errors.NotFound("service not resolved", fmt.Sprintf("service %s not resolved in registry", name))
 	}
 	ss, _ := set.services.Load().([]*registry.ServiceInstance)
 	if ss == nil {
-		return nil, errors.NotFound("service not found", "service %s not found in registry", name)
+		return nil, errors.NotFound("service not found", fmt.Sprintf("service %s not found in registry", name))
 	}
 	for _, s := range ss {
 		services = append(services, s)

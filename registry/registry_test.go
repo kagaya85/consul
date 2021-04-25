@@ -36,9 +36,9 @@ func TestRegister(t *testing.T) {
 	time.Sleep(time.Millisecond * 100)
 	cli, err := api.NewClient(&api.Config{Address: "127.0.0.1:8500"})
 	if err != nil {
-		t.Fatalf("create consul client failed!err:=%v", err)
+		t.Fatalf("create consul client failed: %v", err)
 	}
-	r, err := New(cli)
+	r := New(cli)
 	assert.Nil(t, err)
 	version := strconv.FormatInt(time.Now().Unix(), 10)
 	svc := &registry.ServiceInstance{
