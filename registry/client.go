@@ -87,7 +87,7 @@ func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) er
 		},
 	}
 
-	ch := make(chan error)
+	ch := make(chan error, 1)
 	go func() {
 		err := d.cli.Agent().ServiceRegister(asr)
 		ch <- err
@@ -103,7 +103,7 @@ func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) er
 
 // Deregister deregister service by service ID
 func (d *Client) Deregister(ctx context.Context, serviceID string) error {
-	ch := make(chan error)
+	ch := make(chan error, 1)
 	go func() {
 		err := d.cli.Agent().ServiceDeregister(serviceID)
 		ch <- err
