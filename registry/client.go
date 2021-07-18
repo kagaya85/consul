@@ -14,12 +14,16 @@ import (
 
 // Client is consul client config
 type Client struct {
-	cli *api.Client
+	cli    *api.Client
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 // NewClient creates consul client
 func NewClient(cli *api.Client) *Client {
-	return &Client{cli: cli}
+	c := &Client{cli: cli}
+	c.ctx, c.cancel = context.WithCancel(context.Background())
+	return c
 }
 
 // Service get services from consul
@@ -82,7 +86,13 @@ func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) er
 		Checks: []*api.AgentServiceCheck{
 			{
 				TCP:      fmt.Sprintf("%s:%d", addr, port),
-				Interval: "10s",
+				Interval: "20s",
+				Status:   "passing",
+			},
+			{
+				CheckID: "service:" + svc.ID,
+				TTL:     "50s",
+				Status:  "passing",
 			},
 		},
 	}
@@ -98,12 +108,27 @@ func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) er
 		err = ctx.Err()
 	case err = <-ch:
 	}
+	if err == nil {
+		go func() {
+			ticker := time.NewTicker(time.Second * 20)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ticker.C:
+					d.cli.Agent().UpdateTTL("service:"+svc.ID, "pass", "pass")
+				case <-d.ctx.Done():
+					return
+				}
+			}
+		}()
+	}
 	return err
 }
 
 // Deregister deregister service by service ID
 func (d *Client) Deregister(ctx context.Context, serviceID string) error {
-	ch := make(chan error, 1)
+	d.cancel()
+	ch := make(chan error,1)
 	go func() {
 		err := d.cli.Agent().ServiceDeregister(serviceID)
 		ch <- err
