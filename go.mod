@@ -5,7 +5,7 @@ go 1.15
 require (
 	github.com/armon/go-metrics v0.3.9 // indirect
 	github.com/fatih/color v1.12.0 // indirect
-	github.com/go-kratos/kratos/v2 v2.0.0
+	github.com/go-kratos/kratos/v2 v2.0.1
 	github.com/hashicorp/consul/api v1.9.1
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-hclog v0.16.2 // indirect
