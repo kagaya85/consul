@@ -47,7 +47,10 @@ func (d *Client) Service(ctx context.Context, service string, index uint64, pass
 			}
 		}
 		var endpoints []string
-		for _, addr := range entry.Service.TaggedAddresses {
+		for scheme, addr := range entry.Service.TaggedAddresses {
+			if scheme == "lan_ipv4" || scheme == "wan_ipv4" || scheme == "lan_ipv6" || scheme == "wan_ipv6" {
+				continue
+			}
 			endpoints = append(endpoints, addr.Address)
 		}
 		services = append(services, &registry.ServiceInstance{
@@ -128,7 +131,7 @@ func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) er
 // Deregister deregister service by service ID
 func (d *Client) Deregister(ctx context.Context, serviceID string) error {
 	d.cancel()
-	ch := make(chan error,1)
+	ch := make(chan error, 1)
 	go func() {
 		err := d.cli.Agent().ServiceDeregister(serviceID)
 		ch <- err
