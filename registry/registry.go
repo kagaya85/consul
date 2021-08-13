@@ -17,9 +17,13 @@ var (
 )
 
 // Option is consul registry option.
-type Option func(*options)
+type Option func(*Registry)
 
-type options struct {
+// WithHealthCheck with registry health check option.
+func WithHealthCheck(enable bool) Option {
+	return func(o *Registry) {
+		o.enableHealthCheck = enable
+	}
 }
 
 // Config is consul registry config
@@ -29,8 +33,9 @@ type Config struct {
 
 // Registry is consul registry
 type Registry struct {
-	cfg *Config
-	cli *Client
+	cfg               *Config
+	cli               *Client
+	enableHealthCheck bool
 
 	registry map[string]*serviceSet
 	lock     sync.RWMutex
@@ -38,15 +43,20 @@ type Registry struct {
 
 // New creates consul registry
 func New(apiClient *api.Client, opts ...Option) *Registry {
-	return &Registry{
-		cli:      NewClient(apiClient),
-		registry: make(map[string]*serviceSet),
+	r := &Registry{
+		cli:               NewClient(apiClient),
+		registry:          make(map[string]*serviceSet),
+		enableHealthCheck: true,
 	}
+	for _, o := range opts {
+		o(r)
+	}
+	return r
 }
 
 // Register register service
 func (r *Registry) Register(ctx context.Context, svc *registry.ServiceInstance) error {
-	return r.cli.Register(ctx, svc)
+	return r.cli.Register(ctx, svc, r.enableHealthCheck)
 }
 
 // Deregister deregister service

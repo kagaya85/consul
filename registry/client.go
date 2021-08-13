@@ -65,7 +65,7 @@ func (d *Client) Service(ctx context.Context, service string, index uint64, pass
 }
 
 // Register register service instacen to consul
-func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) error {
+func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance, enableHealthCheck bool) error {
 	addresses := make(map[string]api.ServiceAddress)
 	var addr string
 	var port uint64
@@ -88,16 +88,18 @@ func (d *Client) Register(ctx context.Context, svc *registry.ServiceInstance) er
 		Port:            int(port),
 		Checks: []*api.AgentServiceCheck{
 			{
-				TCP:      fmt.Sprintf("%s:%d", addr, port),
-				Interval: "20s",
-				Status:   "passing",
-			},
-			{
 				CheckID: "service:" + svc.ID,
 				TTL:     "50s",
 				Status:  "passing",
 			},
 		},
+	}
+	if enableHealthCheck {
+		asr.Checks = append(asr.Checks, &api.AgentServiceCheck{
+			TCP:      fmt.Sprintf("%s:%d", addr, port),
+			Interval: "20s",
+			Status:   "passing",
+		})
 	}
 
 	ch := make(chan error, 1)
